@@ -53,37 +53,41 @@ boolean check_keys() {
     if (i_a("boris's key") == 0)
     {
       ret = true;
-      print("Need Boris's key from the daily dungeon.");
+      print("* Need Boris's key.");
     }
     if (i_a("jarlsberg's key") == 0)
     {
       ret = true;
-      print("Need Jarlsberg's key from the daily dungeon.");
+      print("* Need Jarlsberg's key.");
     }
     if (i_a("sneaky pete's key") == 0)
     {
       ret = true;
-      print("Need Sneaky Pete's key from the daily dungeon.");
+      print("* Need Sneaky Pete's key.");
     }
     if (ret && i_a("fat loot token") > 0) {
-      print("You have a fat loot token to buy one.");
+      print(">>> You have a fat loot token to buy one.");
     }
+		if (ret && i_a("fat loot token") == 0) {
+      print(">>> Adventure in the daily dungeon to get one.");
+    }
+
   }
   if (i_a("steam-powered model rocketship") > 0) {
     if (i_a("richard's star key") == 0)
     {
       ret = true;
-      print("Need Richard's star's key.");
+      print("* Need Richard's star's key.");
       int s = i_a("star");
       if (s < 8) {
-        print ("Need " + (8 - s) + " star(s)");
+        print (">>> Need " + (8 - s) + " star(s)");
       }
       s = i_a("line");
       if (s < 7) {
-        print ("Need " + (7 - s) + " star(s)");
+        print (">>> Need " + (7 - s) + " star(s)");
       }
       if (i_a("star chart") == 0) {
-        print ("Need a star chart.");
+        print (">>> Need a star chart.");
       }
     }
   }
