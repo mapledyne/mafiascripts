@@ -86,10 +86,24 @@ tattooStatus[63].outName = "Vile Vagrant Vestments";
 tattooStatus[64].outName = "War Hippy Fatigues";
 tattooStatus[65].outName = "Wumpus-Hair Wardrobe";
 tattooStatus[66].outName = "Yendorian Finery";
+tattooStatus[67].outName = "Topiaria";
 
 int item_count(item it) {
-   int counter = item_amount( it ) + closet_amount( it ) + storage_amount( it );
+   int counter = item_amount( it ) + closet_amount( it ) + storage_amount( it ) + display_amount ( it ) + equipped_amount ( it );
    return counter;
+}
+
+boolean has_it(string outfit)
+{
+	item [int] outfit_parts = outfit_pieces(outfit);
+	foreach doodad in outfit_parts
+	{
+		if (item_count(outfit_parts[doodad]) == 0)
+		{
+			return false;
+		}
+	}
+	return true;
 }
 
 void possessedTats( )
@@ -97,7 +111,7 @@ void possessedTats( )
 	string tattooList = visit_url( "account_tattoos.php" );
 	for i from 0 to count( tattooStatus ) - 1
 	{
-		tattooStatus[i].have_outfit = have_outfit(tattooStatus[i].outName);
+		tattooStatus[i].have_outfit = has_it(tattooStatus[i].outName);
 		if( contains_text( tattooList , outfit_tattoo(tattooStatus[i].outName) ) )
 		{
 			tattooStatus[i].own = true;
@@ -135,6 +149,7 @@ void addSuggestion(int tattoo, string suggestion)
 		{
 			suggestions[x] = tattoo;
 			tattooStatus[tattoo].suggestion = bullet + suggestion;
+			tattooStatus[tattoo].checked = true;
 			return;
 		}
 	}
@@ -146,7 +161,8 @@ void ownedOutfits()
 	{
 		if ( tattooStatus[i].have_outfit && !tattooStatus[i].own )
 		{
-			addSuggestion(i, "You own the outfit <font color='green'>" + tattooStatus[i].outName + "</font>. Just go to the artist to get the tattoo!");
+			tattooStatus[i].checked = true;
+			addSuggestion(i, "You own the outfit <font color='green'>" + tattooStatus[i].outName + "</font>. Put it on and go to the artist to get the tattoo!");
 
 		}
 	}
@@ -176,7 +192,10 @@ void mallOutfits()
 			{
 				tattooStatus[i].cost = 0;
 			}
-			tattooStatus[i].cost += mall_price(doodad);
+			if (item_count(doodad) == 0)
+			{
+				tattooStatus[i].cost += mall_price(doodad);
+			}
 			if (tattooStatus[i].cost > costs)
 				break;
 		}
@@ -192,7 +211,10 @@ void mallOutfits()
 	item [int] stuff = outfit_pieces(tattooStatus[targetOutfit].outName);
 	foreach x in stuff
 	{
-		sug += tab_bullet + stuff[x] + "<br>";
+		if (item_count(stuff[x]) == 0)
+		{
+			sug += tab_bullet + stuff[x] + "<br>";
+		}
 	}
 	addSuggestion(targetOutfit, sug);
 }
@@ -211,28 +233,34 @@ void arrrborDay()
 	}
 }
 
-void bountyHunting()
+
+void buyableParts(int outfit, item part, boolean mall)
 {
-	int bounty = 5;
-	tattooStatus[bounty].checked = true;
-	if (tattooStatus[bounty].own)
+
+	tattooStatus[outfit].checked = true;
+	if (tattooStatus[outfit].own)
 		return;
-	int cost = 0;
-	item [int] outfit = outfit_pieces(tattooStatus[bounty].outName);
-	foreach doodad in outfit
+	int price = 0;
+	if (mall)
 	{
-		if (item_count(outfit[doodad]) == 0)
+		price = mall_price(part);
+	}
+	int cost = 0;
+	item [int] outfit_parts = outfit_pieces(tattooStatus[outfit].outName);
+	foreach doodad in outfit_parts
+	{
+		if (item_count(outfit_parts[doodad]) == 0)
 		{
-			int price = sell_price(outfit[doodad].seller, outfit[doodad]);
+			int price = sell_price(outfit_parts[doodad].seller, outfit_parts[doodad]);
 			cost += price;
 		}
 	}
-	int own = item_count($item[filthy lucre]);
+	int own = item_count(part);
 	int need = cost - own;
 	if (need <= 0)
 	{
-		string sug = "You have enough filthy lucre to complete the <font color='green'>" + tattooStatus[bounty].outName + "</font>. Buy the missing pieces:<br>";
-		item [int] stuff = outfit_pieces(tattooStatus[bounty].outName);
+		string sug = "You have enough " + part + " to complete the <font color='green'>" + tattooStatus[outfit].outName + "</font>.<br>Buy the missing pieces:<br>";
+		item [int] stuff = outfit_pieces(tattooStatus[outfit].outName);
 		foreach x in stuff
 		{
 			if (item_count(stuff[x]) == 0)
@@ -240,10 +268,10 @@ void bountyHunting()
 				sug += tab_bullet + stuff[x] + "<br>";
 			}
 		}
-		addSuggestion(bounty, sug);
+		addSuggestion(outfit, sug);
 	} else {
-		string sug = "You're " + need + " filthy lucre away from the <font color='green'>" + tattooStatus[bounty].outName + "</font>.<br>Get these pieces:<br>";
-		item [int] stuff = outfit_pieces(tattooStatus[bounty].outName);
+		string sug = "You're " + need + " " + part + " away from the <font color='green'>" + tattooStatus[outfit].outName + "</font>.<br>Get these pieces:<br>";
+		item [int] stuff = outfit_pieces(tattooStatus[outfit].outName);
 		foreach x in stuff
 		{
 			if (item_count(stuff[x]) == 0)
@@ -251,8 +279,18 @@ void bountyHunting()
 				sug += tab_bullet + stuff[x] + "<br>";
 			}
 		}
-		addSuggestion(bounty, sug);
+		if (mall)
+		{
+			sug += part + " can be bought in the mall for " + price + " meat. The total cost would run you " + (price*need) + " meat.<br>";
+		}
+		addSuggestion(outfit, sug);
 	}
+
+}
+
+void buyableParts(int outfit, item part)
+{
+	buyableParts(outfit, part, true);
 }
 
 
@@ -331,7 +369,13 @@ void main( )
 	mallOutfits();
 	check_suggestions();
 
-	bountyHunting();
+	buyableParts(67, $item[topiary nugglet]);  // topiaria
+	check_suggestions();
+
+	buyableParts(13, $item[cursed piece of thirteen]); // cursed zombie
+	check_suggestions();
+
+	buyableParts(5, $item[filthy lucre]); // bounty hunting
 	check_suggestions();
 
 	for i from 0 to count( tattooStatus ) - 1
